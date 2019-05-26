@@ -25,32 +25,28 @@ def select_parents(pop, fitness, num_parents):
 
 def crossover(parents, offspring_size, prob):
     offspring = np.empty(offspring_size)
-    print(parents.shape)
-    for n in range(int(np.ceil(offspring_size[0]/2))):
-        temp_parents = zip(parents[2*n], parents[2*n+1])
     n = 0
-    # breakpoint()
-    for parent_1, parent_2 in temp_parents:
-
-        if n >= offspring_size[0]:
-            return offspring
-        rnd = random.random()
-        if rnd < prob:
-            offspring[n, 0] = parent_1[0]
-            offspring[n, 1] = parent_2[1]
-            n += 1
+    for parent_1 in parents:
+        for parent_2 in parents:
             if n >= offspring_size[0]:
                 return offspring
-            offspring[n, 0] = parent_2[0]
-            offspring[n, 1] = parent_1[1]
-            n += 1
-        else:
-            offspring[n] = parent_1
-            n += 1
-            if n >= offspring_size[0]:
-                return offspring
-            offspring[n] = parent_2
-            n += 1
+            rnd = random.random()
+            if rnd < prob:
+                offspring[n, 0] = parent_1[0]
+                offspring[n, 1] = parent_2[1]
+                n += 1
+                if n >= offspring_size[0]:
+                    return offspring
+                offspring[n, 0] = parent_2[0]
+                offspring[n, 1] = parent_1[1]
+                n += 1
+            else:
+                offspring[n] = parent_1
+                n += 1
+                if n >= offspring_size[0]:
+                    return offspring
+                offspring[n] = parent_2
+                n += 1
 
 def mutation(population, prob):
     mutated = np.empty(population.shape)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def function(population):
     '''mathematic function given in excercise'''
-    list = [((np.square(x) - np.square(y)) - np.square(1 - x)) for x, y in population]
+    list = [(np.square(x) + np.sin(y)) for x, y in population]
     value = np.asarray(list)
     return value
 
@@ -117,14 +117,14 @@ num_variables = 2
 crossover_prob = 0.6
 mutation_prob = 0.2
 num_individuals = 16
-num_generations = 100
+num_generations = 30
 
 # dependant
 pop_dim = (num_individuals, num_variables)
 
 # creating population
-x_domain=[-2,2]
-y_domain=[-2,2]
+x_domain=[0,1]
+y_domain=[0,np.pi]
 #how many bits will chromosome have
 precision=10
 pop = np.random.randint(0, 2**precision, size=pop_dim)

@@ -3,7 +3,6 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 def function(population):
     '''mathematic function given in excercise'''
     list = [((np.square(x) - np.square(y)) - np.square(1 - x)) for x, y in population]
@@ -23,31 +22,6 @@ def select_parents(pop, fitness):
                 parents[n,1] = format(pop[i,1], '#0'+str(precision+2)+'b')
                 break
     return parents
-
-# def crossover(parents, offspring_size, prob):
-#     offspring = np.zeros(offspring_size, dtype=object)
-#     n = 0
-#     for parent_1 in parents:
-#         for parent_2 in parents:
-#             if n >= offspring_size[0]:
-#                 return offspring
-#             rnd = random.random()
-#             if rnd < prob:
-#                 offspring[n, 0] = parent_1[0]
-#                 offspring[n, 1] = parent_2[1]
-#                 n += 1
-#                 if n >= offspring_size[0]:
-#                     return offspring
-#                 offspring[n, 0] = parent_2[0]
-#                 offspring[n, 1] = parent_1[1]
-#                 n += 1
-#             else:
-#                 offspring[n] = parent_1
-#                 n += 1
-#                 if n >= offspring_size[0]:
-#                     return offspring
-#                 offspring[n] = parent_2
-#                 n += 1
 
 def crossover(parents, offspring_size, prob):
     offspring = np.zeros(offspring_size, dtype=object)
@@ -108,7 +82,6 @@ def bin2int(pop):
         new_individual[0]=int(pop[i, 0], 2)
         new_individual[1]=int(pop[i, 1], 2)
     return new_population
-
 
 # non-changing variable
 num_variables = 2

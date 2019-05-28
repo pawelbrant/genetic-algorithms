@@ -105,8 +105,8 @@ def relaxation_function(pop, pop_dim):
 def bin2int(pop):
     new_population = np.zeros(pop.shape, dtype=object)
     for i, new_individual in enumerate(new_population):
-        new_individual[i, 0]=int(pop[i, 0], 2)
-        new_individual[i, 1]=int(pop[i, 1], 2)
+        new_individual[0]=int(pop[i, 0], 2)
+        new_individual[1]=int(pop[i, 1], 2)
     return new_population
 
 
@@ -114,10 +114,10 @@ def bin2int(pop):
 num_variables = 2
 
 #changing variables
-crossover_prob = 1
-mutation_prob = 0.7
+crossover_prob = 0.6
+mutation_prob = 0.2
 num_individuals = 16
-num_generations = 28
+num_generations = 100
 
 # dependant
 pop_dim = (num_individuals, num_variables)
@@ -135,9 +135,21 @@ for i in range(num_individuals):
     print("x = "+str(format(pop[i,0], '#0'+str(precision+2)+'b'))+" "+str(pop_float[i,0])+" y = "+str(format(pop[i,1], '#0'+str(precision+2)+'b'))+" "+str(pop_float[i,1]))
 
 best_solution_in_each_generation=[]
+#function to be optimized
+# plt.plot()
+
 # running GA
-for generation in range(num_generations):
+for generation_index, generation in enumerate(range(num_generations)):
     pop_float=relaxation_function(pop,pop_dim)
+    plt.plot(pop_float[:,0],pop_float[:,1],'bo', alpha=0.5,label="Obiekty w populacji")
+    plt.title("Wykres f(x,y). Pokolenie: "+str(generation_index+1))
+    plt.ylim(1.2*y_domain[0],1.2*y_domain[1])
+    plt.xlim(1.2*x_domain[0],1.2*x_domain[1])
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.legend()
+    plt.grid()
+    plt.show()
     fitness = function(pop_float)
     best_solution_in_each_generation.append(max(fitness))
     parents = select_parents(pop, fitness)
@@ -151,8 +163,13 @@ plt.plot(range(1,num_generations+1),best_solution_in_each_generation,label="Best
 plt.ylabel("Wartość funkcji dopasowania")
 plt.xlabel("Generacja")
 plt.title("Wykres wartości najlepszego przystosowania osiągniętego w każdej iteracji")
-if num_generations<30:
+if num_generations<20:
     plt.xticks(range(1,num_generations+1))
+
+z1=np.polyfit(range(1,num_generations+1),best_solution_in_each_generation,7)
+p_1=np.poly1d(z1)
+xp=np.linspace(start=1.0,stop=float(num_generations+2), num=100)
+p11 = plt.plot(xp,p_1(xp),'b:',alpha=0.3,label="Krzywa dopasowania")
 plt.legend()
 plt.grid()
 plt.show()

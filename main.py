@@ -2,15 +2,13 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-import function_plot as fplot
-import gui
 import function_parser as fp
 
 
 class GA:
 
-    def __init__(self, gui_x_domain, gui_y_domain, gui_precision=10, gui_crossover_prob=0.6, gui_mutation_prob=0.2,
-                 gui_num_ind=16, gui_num_gen=20):
+    def __init__(self, gui_x_domain, gui_y_domain, gui_precision=10, gui_crossover_prob=0.6, gui_mutation_prob=0.1,
+                 gui_num_ind=15, gui_num_gen=20):
 
         # non-changing variable
         self.num_variables = 2
@@ -33,64 +31,37 @@ class GA:
         self.pop = np.random.randint(0, 2 ** self.precision, size=self.pop_dim)
         self.pop_float = self.relaxation_function()
 
-    # def function(self):
-    #     """mathematic function given in exercise"""
-    #     list = [(np.square(x) + np.sin(y)) for x, y in population]
-    #     value = np.asarray(list)
-    #     return value
+        self.best_solution_in_each_generation = []
+        self.mean_solution_in_each_generation = []
+        self.median_solution_in_each_generation = []
 
-    def select_parents(pop, fitness):
+    def select_parents(self, fitness):
         """randomly selects given number of parents from population weighted by fitness"""
-        parents = np.zeros(pop.shape, dtype=object)
+        parents = np.zeros(self.pop.shape, dtype=object)
         fitness_exp = np.exp(fitness)
-        for n in range(pop.shape[0]):
+        for n in range(self.pop.shape[0]):
             rnd = random.random() * sum(fitness_exp)
             for i, w in enumerate(fitness_exp):
                 rnd -= w
                 if rnd < 0:
-                    parents[n, 0] = format(pop[i, 0], '#0' + str(precision + 2) + 'b')
-                    parents[n, 1] = format(pop[i, 1], '#0' + str(precision + 2) + 'b')
+                    parents[n, 0] = format(self.pop[i, 0], '#0' + str(self.precision + 2) + 'b')
+                    parents[n, 1] = format(self.pop[i, 1], '#0' + str(self.precision + 2) + 'b')
                     break
         return parents
 
-    # def crossover(parents, offspring_size, prob):
-    #     offspring = np.zeros(offspring_size, dtype=object)
-    #     n = 0
-    #     for parent_1 in parents:
-    #         for parent_2 in parents:
-    #             if n >= offspring_size[0]:
-    #                 return offspring
-    #             rnd = random.random()
-    #             if rnd < prob:
-    #                 offspring[n, 0] = parent_1[0]
-    #                 offspring[n, 1] = parent_2[1]
-    #                 n += 1
-    #                 if n >= offspring_size[0]:
-    #                     return offspring
-    #                 offspring[n, 0] = parent_2[0]
-    #                 offspring[n, 1] = parent_1[1]
-    #                 n += 1
-    #             else:
-    #                 offspring[n] = parent_1
-    #                 n += 1
-    #                 if n >= offspring_size[0]:
-    #                     return offspring
-    #                 offspring[n] = parent_2
-    #                 n += 1
-
-    def crossover(parents, offspring_size, prob):
-        offspring = np.zeros(offspring_size, dtype=object)
+    def crossover(self, parents):
+        offspring = np.zeros(self.pop_dim, dtype=object)
         n = 0
-        for k in range(offspring_size[0]):
-            if n >= offspring_size[0]:
+        for k in range(self.pop_dim[0]):
+            if n >= self.pop_dim[0]:
                 return offspring
             rnd = random.random()
-            if rnd < prob:
+            if rnd < self.crossover_prob:
                 pivot = random.randint(3, len(parents[1, 1]) - 1)
                 offspring[n, 0] = parents[n, 0][:pivot] + parents[n + 1, 1][pivot:]
                 offspring[n, 1] = parents[n + 1, 1][:pivot] + parents[n, 0][pivot:]
                 n += 1
-                if n >= offspring_size[0]:
+                if n >= self.pop_dim[0]:
                     return offspring
                 offspring[n, 0] = parents[n, 0][:pivot] + parents[n - 1, 1][pivot:]
                 offspring[n, 1] = parents[n - 1, 1][:pivot] + parents[n, 0][pivot:]
@@ -98,20 +69,19 @@ class GA:
             else:
                 offspring[n] = parents[n]
                 n += 1
-                if n >= offspring_size[0]:
+                if n >= self.pop_dim[0]:
                     return offspring
                 offspring[n] = parents[n]
                 n += 1
         return offspring
 
-    def mutation(population, prob):
-        mutated = np.zeros(population.shape, dtype=object)
-        for n, individual in enumerate(population):
+    def mutation(self):
+        mutated = np.zeros(self.pop.shape, dtype=object)
+        for n, individual in enumerate(self.pop):
             rnd = random.random()
             mutated[n] = individual
-            if rnd < prob:
+            if rnd < self.mutation_prob:
                 pivot = random.randint(2, len(parents[1, 1]) - 1)
-                print(type(mutated[n, 0]))
                 if mutated[n, 0][pivot] == '0':
                     mutated[n, 0] = mutated[n, 0][:pivot] + '1' + mutated[n, 0][pivot + 1:]
                 else:
@@ -131,64 +101,72 @@ class GA:
             pop_float[counter, 1] += self.y_domain[0]
         return pop_float
 
-    def bin2int(pop):
-        new_population = np.zeros(pop.shape, dtype=object)
+    def bin2int(self):
+        new_population = np.zeros(self.pop.shape, dtype=object)
         for i, new_individual in enumerate(new_population):
-            new_individual[0] = int(pop[i, 0], 2)
-            new_individual[1] = int(pop[i, 1], 2)
+            new_individual[0] = int(self.pop[i, 0], 2)
+            new_individual[1] = int(self.pop[i, 1], 2)
         return new_population
 
-    # print("Binary representation | Float representation")
-    # for i in range(num_individuals):
-    #     print("x = " + str(format(pop[i, 0], '#0' + str(precision + 2) + 'b')) + " " + str(pop_float[i, 0]) + " y = " + str(
-    #         format(pop[i, 1], '#0' + str(precision + 2) + 'b')) + " " + str(pop_float[i, 1]))
-    #
-    # best_solution_in_each_generation = []
-    # # function to be optimized
-    # function = "x**2 + np.sin(y)"
-    # fplot.show_function_plot(x_domain, y_domain, function)
-    # # running GA
-    # for generation_index, generation in enumerate(range(num_generations)):
-    #     pop_float = relaxation_function(pop, pop_dim)
-    #     plt.plot(pop_float[:, 0], pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
-    #     plt.title("Wykres f(x,y). Pokolenie: " + str(generation_index + 1))
-    #     plt.ylim(1.2 * y_domain[0], 1.2 * y_domain[1])
-    #     plt.xlim(1.2 * x_domain[0], 1.2 * x_domain[1])
-    #     plt.xlabel("x")
-    #     plt.ylabel("y")
-    #     plt.legend()
-    #     plt.grid()
-    #     plt.show()
-    #     fitness = function(pop_float)
-    #     best_solution_in_each_generation.append(max(fitness))
-    #     parents = select_parents(pop, fitness)
-    #     print(parents)
-    #     pop = crossover(parents, pop_dim, crossover_prob)
-    #     pop = mutation(pop, mutation_prob)
-    #     pop = bin2int(pop)
-    #
-    # # PLOTS
-    # plt.plot(range(1, num_generations + 1), best_solution_in_each_generation, label="Best solution")
-    # plt.ylabel("Wartość funkcji dopasowania")
-    # plt.xlabel("Generacja")
-    # plt.title("Wykres wartości najlepszego przystosowania osiągniętego w każdej iteracji")
-    # if num_generations < 20:
-    #     plt.xticks(range(1, num_generations + 1))
-    #
-    # z1 = np.polyfit(range(1, num_generations + 1), best_solution_in_each_generation, 7)
-    # p_1 = np.poly1d(z1)
-    # xp = np.linspace(start=1.0, stop=float(num_generations + 2), num=100)
-    # p11 = plt.plot(xp, p_1(xp), 'b:', alpha=0.3, label="Krzywa dopasowania")
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
+    def print_bin_float_representation(self):
+        for i in range(self.num_individuals):
+            print("x = " + str(format(self.pop[i, 0], '#0' + str(self.precision + 2) + 'b')) + " "
+                  + str(self.pop_float[i, 0]) +
+                  " y = " + str(format(self.pop[i, 1], '#0' + str(self.precision + 2) + 'b')) + " "
+                  + str(self.pop_float[i, 1]))
 
 
-g = GA(
-    gui_x_domain=[0, 1],
-    gui_y_domain=[0, 1]
-)
-print(g.pop_float)
-function = "x+y"
-print(fp.fitness_function(function,g.pop_float))
+if __name__ == "__main__":
+    g = GA(
+        gui_x_domain=[0, 1],
+        gui_y_domain=[0, 3.14],
+        gui_precision=10,
+        gui_crossover_prob=0.6,
+        gui_mutation_prob=0.1,
+        gui_num_ind=20,
+        gui_num_gen=15,
+    )
+    function = "x**2+sin(y)"
+    best_x = 0
+    best_y = 0
+    best_solution = 0
+    # running GA
+    for generation_index, generation in enumerate(range(g.num_generations)):
+        plt.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
+        plt.title("Wykres f(x,y). Pokolenie: " + str(generation_index + 1))
+        plt.ylim(1.2 * g.y_domain[0], 1.2 * g.y_domain[1])
+        plt.xlim(1.2 * g.x_domain[0], 1.2 * g.x_domain[1])
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.legend()
+        plt.grid()
+        plt.show()
+        fitness = fp.fitness_function(function, g.pop_float)
+        for fit_index, fit in enumerate(fitness):
+            if fit == max(fitness):
+                best_x = g.pop_float[fit_index, 0]
+                best_y = g.pop_float[fit_index, 1]
+                best_solution = fit
 
+        g.best_solution_in_each_generation.append(np.max(fitness))
+        g.mean_solution_in_each_generation.append(np.mean(fitness))
+        g.median_solution_in_each_generation.append(np.median(fitness))
+        parents = g.select_parents(fitness)
+        g.pop = g.crossover(parents)
+        g.pop = g.mutation()
+        g.pop = g.bin2int()
+        g.pop_float = g.relaxation_function()
+
+    # PLOTS
+    p1 = plt.plot(range(1, g.num_generations + 1), g.best_solution_in_each_generation, color="cyan", linestyle='-',marker="x", alpha=0.5, label="Best")
+    p2 = plt.plot(range(1, g.num_generations + 1), g.mean_solution_in_each_generation, color="aquamarine", linestyle='-', marker="s", alpha=0.5, label="Mean")
+    p3 = plt.plot(range(1, g.num_generations + 1), g.median_solution_in_each_generation, color="teal", linestyle='-', marker="p", alpha=0.5, label="Median")
+    plt.ylabel("Wartość funkcji dopasowania")
+    plt.xlabel("Generacja")
+    plt.title("Wykres wartości osiągniętych w każdej iteracji")
+    if g.num_generations < 20:
+        plt.xticks(range(1, g.num_generations + 1))
+    plt.legend()
+    plt.grid()
+    plt.show()
+    print("Best solution: "+str(best_solution)+" x: "+str(best_x)+" y: "+str(best_y))

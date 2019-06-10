@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
-
+from sympy import symbols, lambdify
+from sympy.parsing.sympy_parser import parse_expr
+import os
 
 def show_function_plot(x_domain, y_domain, function_to_print):
     fig = plt.figure()
@@ -14,7 +16,9 @@ def show_function_plot(x_domain, y_domain, function_to_print):
     x = np.arange(x_domain[0], x_domain[1], 0.1)
     y = np.arange(y_domain[0], y_domain[1], 0.1)
     x, y = np.meshgrid(x, y)
-    z = eval(function_to_print)
+    expr = parse_expr(function_to_print)
+    f = lambdify(symbols("x y"), expr, 'numpy')
+    z = f(x,y)
 
     # Plot the surface.
     surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
@@ -30,4 +34,9 @@ def show_function_plot(x_domain, y_domain, function_to_print):
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('F(X,Y)')
-    plt.show()
+    fig.savefig(os.path.dirname(os.path.realpath(__file__))+"/function_plot.png")
+    return fig
+
+
+if __name__ == "__main__":
+    print(show_function_plot(x_domain=[0, 1],y_domain=[0,3.14],function_to_print="x**2+sin(y)"))

@@ -81,7 +81,7 @@ class GA:
             rnd = random.random()
             mutated[n] = individual
             if rnd < self.mutation_prob:
-                pivot = random.randint(2, len(parents[1, 1]) - 1)
+                pivot = random.randint(2, self.precision - 1)
                 if mutated[n, 0][pivot] == '0':
                     mutated[n, 0] = mutated[n, 0][:pivot] + '1' + mutated[n, 0][pivot + 1:]
                 else:

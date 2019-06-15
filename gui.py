@@ -28,15 +28,15 @@ class GeneticAlgorithms(BaseWidget):
         super(GeneticAlgorithms, self).__init__('GeneticAlgorithms')
 
         # Definition of the forms fields
-        self._crossover_prob = ControlNumber('Choose crossover probability', minimum=0, maximum=1, decimals=3, step=0.10)
-        self._mutation_prob = ControlNumber("Choose mutation probability", minimum=0, maximum=1, decimals=3, step=0.10)
-        self._num_individuals = ControlNumber('Choose number of individuals', minimum=2, maximum=100, step=1)
-        self._num_generations = ControlNumber('Choose number of generations', minimum=1, maximum=100, step=1)
+        self._crossover_prob = ControlNumber('Choose crossover probability', minimum=0, maximum=1, decimals=3, step=0.10, default=0.1)
+        self._mutation_prob = ControlNumber("Choose mutation probability", minimum=0, maximum=1, decimals=3, step=0.10, default=0.6)
+        self._num_individuals = ControlNumber('Choose number of individuals', minimum=2, maximum=100, step=1, default=10)
+        self._num_generations = ControlNumber('Choose number of generations', minimum=1, maximum=100, step=1, default=10)
         self._function = ControlText('Function f(x,y)=')
-        self._x_start = ControlNumber('X start', decimals=3, minimum=-1000, maximum=1000, step=0.1)
-        self._x_end = ControlNumber('X end', decimals=3, minimum=-1000, maximum=1000, step=0.1)
-        self._y_start = ControlNumber('Y start', decimals=3, minimum=-1000, maximum=1000, step=0.1)
-        self._y_end = ControlNumber('Y end', decimals=3, step=0.1)
+        self._x_start = ControlNumber('X start', decimals=3, minimum=-1000, maximum=1000, step=0.1, default=-1)
+        self._x_end = ControlNumber('X end', decimals=3, minimum=-1000, maximum=1000, step=0.1, default=1)
+        self._y_start = ControlNumber('Y start', decimals=3, minimum=-1000, maximum=1000, step=0.1, default=-1)
+        self._y_end = ControlNumber('Y end', decimals=3, step=0.1, default=1)
         self._loaddatabutton = ControlButton('Load data')
         self._showfunctionbutton = ControlButton('Show function')
         self._showfunctionimage = ControlMatplotlib()
@@ -71,14 +71,34 @@ class GeneticAlgorithms(BaseWidget):
     def __buttonAction(self):
         """Button action event"""
         try:
+            # initalization of genetic algorithm
             g = main.GA(
                 gui_x_domain=[self._x_start.value, self._x_end.value],
-                gui_y_domain=[self._y_start.value, self._y_end.value]
+                gui_y_domain=[self._y_start.value, self._y_end.value],
+                gui_crossover_prob=self._crossover_prob.value,
+                gui_mutation_prob=self._mutation_prob.value,
+                gui_num_ind=int(self._num_individuals.value),
+                gui_num_gen=int(self._num_generations.value)
             )
+            new = ''
+            for generation_index in range(g.num_generations):
+                new = new + 'Generation ' + str(generation_index+1) + ';' + ' Population: '
+                new = new + str(g.pop_float) + ';' + ' Function value: '
+                fitness = fp.fitness_function(self._function.value, g.pop_float)
+                new =  new + str(fitness) + '\n'
+                parents = g.select_parents(fitness)
+                g.pop = g.crossover(parents)
+                g.pop = g.mutation()
+                g.pop = g.bin2int()
+                g.pop_float = g.relaxation_function()
 
-            self._terminal.value = fp.fitness_function(self._function.value, g.pop_float)
+                # for generation_index, generation in enumerate(range(g.num_generations)):
+            self._terminal.value =  new
+        except SyntaxError:
+            self._terminal.value = 'Podaj funkcję'
         except Exception as e:
             self._terminal.value = e
+
 
 
 ##################################################################################################################

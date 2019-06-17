@@ -247,7 +247,10 @@ class Window(QTabWidget):
                     self.best_x = g.pop_float[fit_index, 0]
                     self.best_y = g.pop_float[fit_index, 1]
                     self.best_solution = fit
-            g.best_solution_in_each_generation.append(np.max(fitness))
+            if self.find_max == 1:
+                g.best_solution_in_each_generation.append(np.max(fitness))
+            else:
+                g.best_solution_in_each_generation.append(np.min(fitness))
             g.mean_solution_in_each_generation.append(np.mean(fitness))
             g.median_solution_in_each_generation.append(np.median(fitness))
             if self.find_max == 0:
@@ -262,7 +265,19 @@ class Window(QTabWidget):
             self.command_line.append(new)
             ax = self.generation_figure.add_subplot(111)
             # plot data
-            ax.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
+            # ax.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
+            x = np.arange(self.x_start.value(), self.x_end.value(), 0.05)
+            y = np.arange(self.y_start.value(), self.y_end.value(), 0.05)
+            x, y = np.meshgrid(x, y)
+            expr = parse_expr(self.function.text())
+            f = lambdify(symbols("x y"), expr, 'numpy')
+            z = f(x, y)
+
+            # Plot the heatmap.
+            ax.contourf(x, y, z.T, levels=200)
+            self.generation_figure.colorbar(ax=ax)
+
+            ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
             ax.set_title("Wykres f(x,y). Pokolenie: " + str(generation_index + 1))
             ax.set_xlabel("x")
             ax.set_ylabel("y")

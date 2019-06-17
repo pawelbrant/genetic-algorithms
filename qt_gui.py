@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QFormLayout, QWidget, \
-    QTabWidget, QHBoxLayout, QSpinBox, QLabel, QDoubleSpinBox, QTextEdit
+    QTabWidget, QHBoxLayout, QSpinBox, QLabel, QDoubleSpinBox, QTextEdit, QRadioButton
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -14,9 +14,10 @@ from sympy import symbols, lambdify
 from sympy.parsing.sympy_parser import parse_expr
 from mpl_toolkits.mplot3d import Axes3D
 
-#GA
+# GA
 import genetic_algorithm
 import function_parser as fp
+
 
 class Window(QTabWidget):
     def __init__(self, parent=None):
@@ -60,6 +61,12 @@ class Window(QTabWidget):
         self.command_line.isReadOnly()
         self.generation_figure = plt.figure()
         self.generation_canvas = FigureCanvas(self.generation_figure)
+        self.min = QRadioButton("Min")
+        self.min.toggled.connect(lambda: self.select_option(self.min))
+        self.max = QRadioButton("Max")
+        self.max.setChecked(True)
+        self.max.toggled.connect(lambda: self.select_option(self.max))
+        self.find_max = 1
 
         # Summary Window
         self.best_x = ""
@@ -73,8 +80,6 @@ class Window(QTabWidget):
         self.best_x_label = QLabel("Best solution x: " + str(self.best_x))
         self.best_y_label = QLabel("y: " + str(self.best_y))
         self.best_f_label = QLabel("f(x,y): " + str(self.best_solution))
-
-
 
         # Initialize app windows
         self.create_tab_ui()
@@ -112,6 +117,20 @@ class Window(QTabWidget):
 
         self.create_tab.setLayout(data_form)
 
+    def select_option(self, b):
+
+        if b.text() == "Max":
+            if b.isChecked() == True:
+                self.find_max = 1
+            else:
+                self.find_max = 0
+
+        if b.text() == "Min":
+            if b.isChecked() == True:
+                self.find_max = 0
+            else:
+                self.find_max = 1
+
     def solve_tab_ui(self):
 
         ga_button = QPushButton('Find solution')
@@ -128,7 +147,11 @@ class Window(QTabWidget):
         GA_data.addWidget(self.num_gen)
         GA_form.addRow(GA_data)
         GA_form.addRow(self.command_line)
-        GA_form.addRow(ga_button)
+        GA_options = QHBoxLayout()
+        GA_options.addWidget(ga_button)
+        GA_options.addWidget(self.max)
+        GA_options.addWidget(self.min)
+        GA_form.addRow(GA_options)
 
         self.solve_tab.setLayout(GA_form)
 
@@ -190,7 +213,7 @@ class Window(QTabWidget):
         # refresh canvas
         self.canvas.draw()
 
-    def solve(self):
+    def solve(self, option):
         g = genetic_algorithm.GA(
             gui_x_domain=[self.x_start.value(), self.x_end.value()],
             gui_y_domain=[self.y_start.value(), self.y_end.value()],
@@ -214,7 +237,11 @@ class Window(QTabWidget):
             g.best_solution_in_each_generation.append(np.max(fitness))
             g.mean_solution_in_each_generation.append(np.mean(fitness))
             g.median_solution_in_each_generation.append(np.median(fitness))
-            parents = g.select_parents(fitness)
+            if self.find_max == 0:
+                negative_fitness = [i * -1 for i in fitness]
+                parents = g.select_parents(negative_fitness)
+            else:
+                parents = g.select_parents(fitness)
             g.pop = g.crossover(parents)
             g.pop = g.mutation()
             g.pop = g.bin2int()

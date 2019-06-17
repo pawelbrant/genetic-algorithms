@@ -3,7 +3,6 @@
 import pyforms
 import main
 import function_parser as fp
-import function_plot as fplot
 from pyforms.basewidget import BaseWidget
 from pyforms.controls import ControlText
 from pyforms.controls import ControlButton
@@ -41,6 +40,7 @@ class GeneticAlgorithms(BaseWidget):
         self._showfunctionbutton = ControlButton('Show function')
         self._showfunctionimage = ControlMatplotlib()
         self._terminal = ControlTextArea()
+        self._terminal.readonly
         # Define the button action
         self._loaddatabutton.value = self.__buttonAction
         self._showfunctionbutton.value = self.__function_plotAction
@@ -58,13 +58,10 @@ class GeneticAlgorithms(BaseWidget):
 
     def __function_plotAction(self):
         try:
-            fig = fplot.show_function_plot(function_to_print=self._function.value,
+            function_plot = fplot.show_function_plot(function_to_print=self._function.value,
                                      x_domain=[self._x_start.value, self._x_end.value],
                                      y_domain=[self._y_start.value, self._y_end.value])
-
-            self._showfunctionimage.fig = fig
-            self._showfunctionimage.value = fig
-            self._showfunctionimage.draw()
+            self._showfunctionimage.value = 10
         except Exception as e:
             print(e)
 
@@ -82,10 +79,10 @@ class GeneticAlgorithms(BaseWidget):
             )
             new = ''
             for generation_index in range(g.num_generations):
-                new = new + 'Generation ' + str(generation_index+1) + ';' + ' Population: '
-                new = new + str(g.pop_float) + ';' + ' Function value: '
+                new = new + 'Generation ' + str(generation_index+1) + ';\n' + ' Population: '
+                new = new + str(g.pop_float) + ';\n' + ' Function value: '
                 fitness = fp.fitness_function(self._function.value, g.pop_float)
-                new =  new + str(fitness) + '\n'
+                new = new + str(fitness) + '\n'
                 parents = g.select_parents(fitness)
                 g.pop = g.crossover(parents)
                 g.pop = g.mutation()
@@ -93,7 +90,8 @@ class GeneticAlgorithms(BaseWidget):
                 g.pop_float = g.relaxation_function()
 
                 # for generation_index, generation in enumerate(range(g.num_generations)):
-            self._terminal.value =  new
+            self._terminal.value = new
+            self._terminal.finishEditing()
         except SyntaxError:
             self._terminal.value = 'Podaj funkcję'
         except Exception as e:

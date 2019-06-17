@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QFormLayout, QWidget, \
-    QTabWidget, QHBoxLayout, QSpinBox, QLabel, QDoubleSpinBox
+    QTabWidget, QHBoxLayout, QSpinBox, QLabel, QDoubleSpinBox, QTextEdit
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -14,28 +14,63 @@ from sympy import symbols, lambdify
 from sympy.parsing.sympy_parser import parse_expr
 from mpl_toolkits.mplot3d import Axes3D
 
+#GA
+import genetic_algorithm
+import function_parser as fp
 
 class Window(QTabWidget):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+
+        # Windows
+        self.create_tab = QWidget()
+        self.solve_tab = QWidget()
+        self.plot_tab = QWidget()
+        self.summary_tab = QWidget()
+
+        self.addTab(self.create_tab, "Create")
+        self.addTab(self.solve_tab, "Solve")
+        self.addTab(self.plot_tab, "Generations plots")
+        self.addTab(self.summary_tab, "Summary")
+
+        # Create Window
         self.x_start = QDoubleSpinBox()
         self.x_end = QDoubleSpinBox()
         self.y_start = QDoubleSpinBox()
         self.y_end = QDoubleSpinBox()
         self.function = QLineEdit()
-        self.create_tab = QWidget()
-        self.solve_tab = QWidget()
-        self.plot_tab = QWidget()
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
 
-        self.addTab(self.create_tab, "Create")
-        self.addTab(self.solve_tab, "Solve")
-        self.addTab(self.plot_tab, "Generations plots")
+        # Solve Window
+        self.crossover_prob = QDoubleSpinBox()
+        self.crossover_prob.setMinimum(0)
+        self.crossover_prob.setMaximum(1)
+        self.crossover_prob.setSingleStep(0.1)
+        self.mutation_prob = QDoubleSpinBox()
+        self.mutation_prob.setMinimum(0)
+        self.mutation_prob.setMaximum(1)
+        self.mutation_prob.setSingleStep(0.1)
+        self.num_ind = QSpinBox()
+        self.num_ind.setRange(2, 100)
+        self.num_ind.setSingleStep(2)
+        self.num_gen = QSpinBox()
+        self.num_gen.setRange(1, 100)
+        self.command_line = QTextEdit()
+        self.command_line.isReadOnly()
+        self.generation_figure = plt.figure()
+        self.generation_canvas = FigureCanvas(self.generation_figure)
 
+        self.best_x = ""
+        self.best_y = ""
+        self.best_solution = float("nan")
+
+
+        # Initialize app windows
         self.create_tab_ui()
         self.solve_tab_ui()
         self.plot_tab_ui()
+        self.summary_tab_ui()
         self.setWindowTitle("Genetic Algorithms")
 
     def create_tab_ui(self):
@@ -58,16 +93,45 @@ class Window(QTabWidget):
         function_data.addWidget(QLabel("]"))
         data_form.addRow("f(x,y) = ", function_data)
         data_form.addRow(toolbar)
-        data_form.addRow(self.canvas)
+        function_plot = QHBoxLayout()
+        function_plot.addWidget(QLabel(""))
+        function_plot.addWidget(self.canvas)
+        function_plot.addWidget(QLabel(""))
+        data_form.addRow(function_plot)
         data_form.addRow(button)
 
         self.create_tab.setLayout(data_form)
 
     def solve_tab_ui(self):
 
-        pass
+        ga_button = QPushButton('Find solution')
+        ga_button.clicked.connect(self.solve)
+        GA_form = QFormLayout()
+        GA_data = QHBoxLayout()
+        GA_data.addWidget(QLabel("Crossover probability: "))
+        GA_data.addWidget(self.crossover_prob)
+        GA_data.addWidget(QLabel("Mutation probability: "))
+        GA_data.addWidget(self.mutation_prob)
+        GA_data.addWidget(QLabel("Number of individuals: "))
+        GA_data.addWidget(self.num_ind)
+        GA_data.addWidget(QLabel("Number of generations: "))
+        GA_data.addWidget(self.num_gen)
+        GA_form.addRow(GA_data)
+        GA_form.addRow(self.command_line)
+        GA_form.addRow(ga_button)
+
+        self.solve_tab.setLayout(GA_form)
 
     def plot_tab_ui(self):
+
+        GA_generations_plots = QVBoxLayout()
+        ga_toolbar = NavigationToolbar(self.generation_canvas, self)
+        GA_generations_plots.addWidget(ga_toolbar)
+        GA_generations_plots.addWidget(self.generation_canvas)
+
+        self.plot_tab.setLayout(GA_generations_plots)
+
+    def summary_tab_ui(self):
         pass
 
     def plot(self):
@@ -102,6 +166,48 @@ class Window(QTabWidget):
 
         # refresh canvas
         self.canvas.draw()
+
+    def solve(self):
+        g = genetic_algorithm.GA(
+            gui_x_domain=[self.x_start.value(), self.x_end.value()],
+            gui_y_domain=[self.y_start.value(), self.y_end.value()],
+            gui_crossover_prob=self.crossover_prob.value(),
+            gui_mutation_prob=self.mutation_prob.value(),
+            gui_num_ind=self.num_ind.value(),
+            gui_num_gen=self.num_gen.value()
+        )
+        self.command_line.clear()
+        for generation_index in range(g.num_generations):
+            new = "**********************************\n"
+            new = new + 'Generation ' + str(generation_index + 1) + ';\n' + ' Population:\n '
+            new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
+            fitness = fp.fitness_function(self.function.text(), g.pop_float)
+            new = new + str(fitness) + '\n'
+            for fit_index, fit in enumerate(fitness):
+                if fit == max(fitness):
+                    self.best_x = g.pop_float[fit_index, 0]
+                    self.best_y = g.pop_float[fit_index, 1]
+                    self.best_solution = fit
+            g.best_solution_in_each_generation.append(np.max(fitness))
+            g.mean_solution_in_each_generation.append(np.mean(fitness))
+            g.median_solution_in_each_generation.append(np.median(fitness))
+            parents = g.select_parents(fitness)
+            g.pop = g.crossover(parents)
+            g.pop = g.mutation()
+            g.pop = g.bin2int()
+            g.pop_float = g.relaxation_function()
+            self.command_line.append(new)
+            ax = self.generation_figure.add_subplot(111)
+            # plot data
+            ax.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
+            ax.set_title("Wykres f(x,y). Pokolenie: " + str(generation_index + 1))
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.legend()
+            ax.grid()
+            # refresh canvas
+            self.generation_canvas.draw()
+        self.command_line.update()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import pyforms
-import main
+import genetic_algorithm
 import function_parser as fp
 from pyforms.basewidget import BaseWidget
 from pyforms.controls import ControlText
@@ -69,7 +69,7 @@ class GeneticAlgorithms(BaseWidget):
         """Button action event"""
         try:
             # initalization of genetic algorithm
-            g = main.GA(
+            g = genetic_algorithm.GA(
                 gui_x_domain=[self._x_start.value, self._x_end.value],
                 gui_y_domain=[self._y_start.value, self._y_end.value],
                 gui_crossover_prob=self._crossover_prob.value,

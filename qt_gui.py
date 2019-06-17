@@ -61,9 +61,19 @@ class Window(QTabWidget):
         self.generation_figure = plt.figure()
         self.generation_canvas = FigureCanvas(self.generation_figure)
 
+        # Summary Window
         self.best_x = ""
         self.best_y = ""
         self.best_solution = float("nan")
+        self.summary_figure = plt.figure()
+        self.summary_canvas = FigureCanvas(self.summary_figure)
+        self.mean = []
+        self.median = []
+        self.best = []
+        self.best_x_label = QLabel("Best solution x: " + str(self.best_x))
+        self.best_y_label = QLabel("y: " + str(self.best_y))
+        self.best_f_label = QLabel("f(x,y): " + str(self.best_solution))
+
 
 
         # Initialize app windows
@@ -132,7 +142,20 @@ class Window(QTabWidget):
         self.plot_tab.setLayout(GA_generations_plots)
 
     def summary_tab_ui(self):
-        pass
+        summary_button = QPushButton('Show summary')
+        summary_button.clicked.connect(self.summary)
+        GA_summary = QFormLayout()
+        GA_summary_data = QHBoxLayout()
+
+        GA_summary_data.addWidget(self.best_x_label)
+        GA_summary_data.addWidget(self.best_y_label)
+        GA_summary_data.addWidget(self.best_f_label)
+        ga_toolbar = NavigationToolbar(self.summary_canvas, self)
+        GA_summary.addRow(GA_summary_data)
+        GA_summary.addRow(ga_toolbar)
+        GA_summary.addRow(self.summary_canvas)
+        GA_summary.addRow(summary_button)
+        self.summary_tab.setLayout(GA_summary)
 
     def plot(self):
 
@@ -208,6 +231,29 @@ class Window(QTabWidget):
             # refresh canvas
             self.generation_canvas.draw()
         self.command_line.update()
+        self.mean = g.mean_solution_in_each_generation
+        self.median = g.median_solution_in_each_generation
+        self.best = g.best_solution_in_each_generation
+
+    def summary(self):
+        ax = self.summary_figure.add_subplot(111)
+        # plot data
+        p1 = ax.plot(range(1, self.num_gen.value() + 1), self.best, color="cyan", linestyle='-',
+                     marker="x", alpha=0.5, label="Best")
+        p2 = ax.plot(range(1, self.num_gen.value() + 1), self.mean, color="aquamarine",
+                     linestyle='-', marker="s", alpha=0.5, label="Mean")
+        p3 = ax.plot(range(1, self.num_gen.value() + 1), self.median, color="teal",
+                     linestyle='-', marker="p", alpha=0.5, label="Median")
+        ax.set_title("Wykres wartości osiągniętych w każdej iteracji")
+        ax.set_xlabel("Generacja")
+        ax.set_ylabel("Wartość funkcji dopasowania")
+        ax.legend()
+        ax.grid()
+        # refresh canvas
+        self.summary_canvas.draw()
+        self.best_x_label.setText("Best solution x: " + str(self.best_x))
+        self.best_y_label.setText("y: " + str(self.best_y))
+        self.best_f_label.setText("f(x,y): " + str(self.best_solution))
 
 
 if __name__ == '__main__':

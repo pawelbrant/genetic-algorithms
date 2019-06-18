@@ -243,18 +243,17 @@ class Window(QTabWidget):
             gui_num_gen=self.num_gen.value()
         )
         self.population_list = []
-        self.population_list.append(g.pop_float)
         self.command_line.clear()
         x = np.linspace(self.x_start.value(), self.x_end.value(), 200)
         y = np.linspace(self.y_start.value(), self.y_end.value(), 200)
         x, y = np.meshgrid(x, y)
-        new = "**********************************\n"
-        new = new + 'Generation 1;\n' + ' Population:\n '
-        new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
-        fitness = fp.fitness_function(self.function.text(), g.pop_float)
-        new = new + str(fitness) + '\n'
-        self.command_line.append(new)
-        for generation_index in range(g.num_generations - 1):
+        for generation_index in range(g.num_generations):
+            new = "**********************************\n"
+            new = new + 'Generation ' + str(generation_index + 1) + ';\n' + ' Population:\n '
+            new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
+            fitness = fp.fitness_function(self.function.text(), g.pop_float)
+            new = new + str(fitness) + '\n'
+            self.command_line.append(new)
             for fit_index, fit in enumerate(fitness):
                 if fit == max(fitness):
                     self.best_x = g.pop_float[fit_index, 0]
@@ -266,22 +265,17 @@ class Window(QTabWidget):
                 g.best_solution_in_each_generation.append(np.min(fitness))
             g.mean_solution_in_each_generation.append(np.mean(fitness))
             g.median_solution_in_each_generation.append(np.median(fitness))
-            if self.find_max == 0:
-                negative_fitness = [i * -1 for i in fitness]
-                parents = g.select_parents(negative_fitness)
-            else:
-                parents = g.select_parents(fitness)
-            g.pop = g.crossover(parents)
-            g.pop = g.mutation()
-            g.pop = g.bin2int()
-            g.pop_float = g.relaxation_function()
-            fitness = fp.fitness_function(self.function.text(), g.pop_float)
-            new = "**********************************\n"
-            new = new + 'Generation ' + str(generation_index + 2) + ';\n' + ' Population:\n '
-            new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
-            new = new + str(fitness) + '\n'
             self.population_list.append(g.pop_float)
-            self.command_line.append(new)
+            if generation_index != g.num_generations:
+                if self.find_max == 0:
+                    negative_fitness = [i * -1 for i in fitness]
+                    parents = g.select_parents(negative_fitness)
+                else:
+                    parents = g.select_parents(fitness)
+                g.pop = g.crossover(parents)
+                g.pop = g.mutation()
+                g.pop = g.bin2int()
+                g.pop_float = g.relaxation_function()
         self.current_gen = generation_index
         self.generation_figure.clear()
         ax = self.generation_figure.add_subplot(111)
@@ -299,7 +293,7 @@ class Window(QTabWidget):
         self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
         # ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1])
-        ax.set_title("Wykres f(x,y). Pokolenie: " + str(generation_index + 2))
+        ax.set_title("Wykres f(x,y). Pokolenie: " + str(self.current_gen + 1))
         ax.set_xlim(left=self.x_start.value(), right=self.x_end.value())
         ax.set_ylim(bottom=self.y_start.value(), top=self.y_end.value())
         ax.set_xlabel("x")

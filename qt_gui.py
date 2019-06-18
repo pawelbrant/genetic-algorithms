@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 # Plotting
 import matplotlib.pyplot as plt
-from matplotlib import cm
+from matplotlib import cm, colors
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from sympy import symbols, lambdify
@@ -65,15 +65,17 @@ class Window(QTabWidget):
         self.num_ind = QSpinBox()
         self.num_ind.setRange(2, 100)
         self.num_ind.setSingleStep(2)
-        self.num_ind.setValue(16)
+        self.num_ind.setValue(10)
         self.num_gen = QSpinBox()
         self.num_gen.setRange(1, 100)
-        self.num_gen.setValue(20)
+        self.num_gen.setValue(5)
         self.command_line = QTextEdit()
         self.command_line.setMinimumHeight(475)
         self.command_line.isReadOnly()
         self.generation_figure = plt.figure()
         self.generation_canvas = FigureCanvas(self.generation_figure)
+        self.population_list = []
+        self.current_gen = None
         self.min = QRadioButton("Min")
         self.min.toggled.connect(lambda: self.select_option(self.min))
         self.max = QRadioButton("Max")
@@ -169,10 +171,15 @@ class Window(QTabWidget):
         self.solve_tab.setLayout(GA_form)
 
     def plot_tab_ui(self):
-
+        previous_button = QPushButton('Previous generation')
+        previous_button.clicked.connect(self.previous_plot)
+        next_button = QPushButton('Next generation')
+        next_button.clicked.connect(self.next_plot)
         GA_generations_plots = QVBoxLayout()
         ga_toolbar = NavigationToolbar(self.generation_canvas, self)
         GA_generations_plots.addWidget(ga_toolbar)
+        GA_generations_plots.addWidget(previous_button)
+        GA_generations_plots.addWidget(next_button)
         GA_generations_plots.addWidget(self.generation_canvas)
 
         self.plot_tab.setLayout(GA_generations_plots)
@@ -235,13 +242,19 @@ class Window(QTabWidget):
             gui_num_ind=self.num_ind.value(),
             gui_num_gen=self.num_gen.value()
         )
+        self.population_list = []
+        self.population_list.append(g.pop_float)
         self.command_line.clear()
-        for generation_index in range(g.num_generations):
-            new = "**********************************\n"
-            new = new + 'Generation ' + str(generation_index + 1) + ';\n' + ' Population:\n '
-            new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
-            fitness = fp.fitness_function(self.function.text(), g.pop_float)
-            new = new + str(fitness) + '\n'
+        x = np.linspace(self.x_start.value(), self.x_end.value(), 200)
+        y = np.linspace(self.y_start.value(), self.y_end.value(), 200)
+        x, y = np.meshgrid(x, y)
+        new = "**********************************\n"
+        new = new + 'Generation 1;\n' + ' Population:\n '
+        new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
+        fitness = fp.fitness_function(self.function.text(), g.pop_float)
+        new = new + str(fitness) + '\n'
+        self.command_line.append(new)
+        for generation_index in range(g.num_generations - 1):
             for fit_index, fit in enumerate(fitness):
                 if fit == max(fitness):
                     self.best_x = g.pop_float[fit_index, 0]
@@ -262,33 +275,107 @@ class Window(QTabWidget):
             g.pop = g.mutation()
             g.pop = g.bin2int()
             g.pop_float = g.relaxation_function()
+            fitness = fp.fitness_function(self.function.text(), g.pop_float)
+            new = "**********************************\n"
+            new = new + 'Generation ' + str(generation_index + 2) + ';\n' + ' Population:\n '
+            new = new + str(g.pop_float) + ';\n' + ' Function value: \n'
+            new = new + str(fitness) + '\n'
+            self.population_list.append(g.pop_float)
             self.command_line.append(new)
+        self.current_gen = generation_index
+        self.generation_figure.clear()
+        ax = self.generation_figure.add_subplot(111)
+        # plot data
+        ax.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.7)
+        expr = parse_expr(self.function.text())
+        f = lambdify(symbols("x y"), expr, 'numpy')
+        z = f(x, y)
+
+        # Plot the heatmap.
+        cmap = cm.viridis
+        ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+        mappable = ax.collections[0]
+        norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
+        self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+
+        # ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1])
+        ax.set_title("Wykres f(x,y). Pokolenie: " + str(generation_index + 2))
+        ax.set_xlim(left=self.x_start.value(), right=self.x_end.value())
+        ax.set_ylim(bottom=self.y_start.value(), top=self.y_end.value())
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        # ax.legend()
+        ax.grid()
+        # refresh canvas
+        self.generation_canvas.draw()
+        self.command_line.update()
+        self.mean = g.mean_solution_in_each_generation
+        self.median = g.median_solution_in_each_generation
+        self.best = g.best_solution_in_each_generation
+
+    def previous_plot(self):
+        if self.current_gen is not None and self.current_gen > 0:
+            self.current_gen = self.current_gen - 1
+            self.generation_figure.clear()
             ax = self.generation_figure.add_subplot(111)
             # plot data
-            # ax.plot(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
-            x = np.arange(self.x_start.value(), self.x_end.value(), 0.05)
-            y = np.arange(self.y_start.value(), self.y_end.value(), 0.05)
+            ax.plot(self.population_list[self.current_gen][:, 0], self.population_list[self.current_gen][:, 1], 'bo', alpha=0.7)
+            x = np.linspace(self.x_start.value(), self.x_end.value(), 200)
+            y = np.linspace(self.y_start.value(), self.y_end.value(), 200)
             x, y = np.meshgrid(x, y)
             expr = parse_expr(self.function.text())
             f = lambdify(symbols("x y"), expr, 'numpy')
             z = f(x, y)
 
             # Plot the heatmap.
-            ax.contourf(x, y, z.T, levels=200)
-            self.generation_figure.colorbar(ax=ax)
+            cmap = cm.viridis
+            ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+            mappable = ax.collections[0]
+            norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
+            self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
-            ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1], 'bo', alpha=0.5, label="Obiekty w populacji")
-            ax.set_title("Wykres f(x,y). Pokolenie: " + str(generation_index + 1))
+            # ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1])
+            ax.set_title("Wykres f(x,y). Pokolenie: " + str(self.current_gen + 1))
+            ax.set_xlim(left=self.x_start.value(), right=self.x_end.value())
+            ax.set_ylim(bottom=self.y_start.value(), top=self.y_end.value())
             ax.set_xlabel("x")
             ax.set_ylabel("y")
-            ax.legend()
+            # ax.legend()
             ax.grid()
             # refresh canvas
             self.generation_canvas.draw()
-        self.command_line.update()
-        self.mean = g.mean_solution_in_each_generation
-        self.median = g.median_solution_in_each_generation
-        self.best = g.best_solution_in_each_generation
+
+    def next_plot(self):
+        if self.current_gen is not None and self.current_gen < self.num_gen.value() - 1:
+            self.current_gen = self.current_gen + 1
+            self.generation_figure.clear()
+            ax = self.generation_figure.add_subplot(111)
+            # plot data
+            ax.plot(self.population_list[self.current_gen][:, 0], self.population_list[self.current_gen][:, 1], 'bo', alpha=0.7)
+            x = np.linspace(self.x_start.value(), self.x_end.value(), 200)
+            y = np.linspace(self.y_start.value(), self.y_end.value(), 200)
+            x, y = np.meshgrid(x, y)
+            expr = parse_expr(self.function.text())
+            f = lambdify(symbols("x y"), expr, 'numpy')
+            z = f(x, y)
+
+            # Plot the heatmap.
+            cmap = cm.viridis
+            ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+            mappable = ax.collections[0]
+            norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
+            self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+
+            # ax.scatter(g.pop_float[:, 0], g.pop_float[:, 1])
+            ax.set_title("Wykres f(x,y). Pokolenie: " + str(self.current_gen + 1))
+            ax.set_xlim(left=self.x_start.value(), right=self.x_end.value())
+            ax.set_ylim(bottom=self.y_start.value(), top=self.y_end.value())
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            # ax.legend()
+            ax.grid()
+            # refresh canvas
+            self.generation_canvas.draw()
 
     def summary(self):
         ax = self.summary_figure.add_subplot(111)

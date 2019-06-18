@@ -372,6 +372,7 @@ class Window(QTabWidget):
             self.generation_canvas.draw()
 
     def summary(self):
+        self.summary_figure.clear()
         ax = self.summary_figure.add_subplot(111)
         # plot data
         p1 = ax.plot(range(1, self.num_gen.value() + 1), self.best, color="cyan", linestyle='-',

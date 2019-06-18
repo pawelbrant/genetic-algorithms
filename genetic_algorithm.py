@@ -57,7 +57,7 @@ class GA:
                 return offspring
             rnd = random.random()
             if rnd < self.crossover_prob:
-                pivot = random.randint(3, len(parents[1, 1]) - 1)
+                pivot = random.randint(3, self.precision - 1)
                 offspring[n, 0] = parents[n, 0][:pivot] + parents[n + 1, 1][pivot:]
                 offspring[n, 1] = parents[n + 1, 1][:pivot] + parents[n, 0][pivot:]
                 n += 1

@@ -287,7 +287,7 @@ class Window(QTabWidget):
 
         # Plot the heatmap.
         cmap = cm.viridis
-        ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+        ax.contourf(x, y, z, levels=200, cmap=cmap)
         mappable = ax.collections[0]
         norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
         self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
@@ -323,7 +323,7 @@ class Window(QTabWidget):
 
             # Plot the heatmap.
             cmap = cm.viridis
-            ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+            ax.contourf(x, y, z, levels=200, cmap=cmap)
             mappable = ax.collections[0]
             norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
             self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
@@ -355,7 +355,7 @@ class Window(QTabWidget):
 
             # Plot the heatmap.
             cmap = cm.viridis
-            ax.contourf(x, y, z.T, levels=200, cmap=cmap)
+            ax.contourf(x, y, z, levels=200, cmap=cmap)
             mappable = ax.collections[0]
             norm = colors.Normalize(vmin=np.min(z), vmax=np.max(z))
             self.generation_figure.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
